@@ -3,7 +3,6 @@ import { NotificationRequestInput, scheduleNotificationAsync } from 'expo-notifi
 
 const sendNotification = async (newNotification: NotificationRequestInput) => {
  if (!Constants.platform.web) {
-  console.log(Constants.isDevice)
   return await scheduleNotificationAsync(newNotification)
  }
  return null

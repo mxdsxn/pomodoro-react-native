@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications'
 import React, { useState, useEffect } from 'react'
 import { Text, View, Button, NativeEventSubscription } from 'react-native'
 
-import Timer from './src/components/timer'
+import Timer, { MINUTE_REF } from './src/components/timer'
 import usePushNotification from './src/utils/notifications/usePushNotification'
 import sendNotification from './src/utils/notifications/sendNotification'
 import { focusFinalMessageNotification } from './src/utils/notifications/defaultNotifications'
@@ -16,10 +16,10 @@ Notifications.setNotificationHandler({
 })
 
 export default function App() {
-  const [time, setTime] = useState<number>(0.05)
-  const [isFocused, setFocus] = useState<boolean>(false)
+  const minutesTime = 25
+  const [__, setFocus] = useState<boolean>(false)
   const [_, setExpoPushToken] = useState<string>('')
-  const [notification, setNotification] = useState<Notifications.Notification>(null)
+  const [notificationId, setNotificationId] = useState<string>(null)
 
   let receivedNotificationListener: NativeEventSubscription = null
   let responseReceivedNotificationListener: NativeEventSubscription = null
@@ -29,8 +29,7 @@ export default function App() {
 
     // registra listener para recebimento de notificacao
     receivedNotificationListener = Notifications.addNotificationReceivedListener(notification => {
-      // callback de notificacao recebida
-      setNotification(notification)
+      // callback de notificacao 
     })
 
     // registra listener para click em notificacao
@@ -46,28 +45,22 @@ export default function App() {
     }
   }, [])
 
-  const toggleFocus = async () => {
-    if (!isFocused) {
-      setFocus(true)
-    } else {
-      setFocus(false)
-      notification && await Notifications.cancelScheduledNotificationAsync(notification.request.identifier)
-      console.log(notification)
-    }
-  }
-
   const showRegisteredNotifications = async () => {
-    console.log((await Notifications.getAllScheduledNotificationsAsync()).map(notification => notification.identifier))
+    console.log((await Notifications.getAllScheduledNotificationsAsync()))
   }
 
   const onFinishTimer = () => {
     setFocus(false)
   }
 
-  const onStartTimer = () => {
-    sendNotification(focusFinalMessageNotification(3))
-    console.log('teste')
+  const onStartTimer = async () => {
+    setNotificationId(await sendNotification(focusFinalMessageNotification({ seconds: MINUTE_REF * minutesTime / 1000 })))
     setFocus(true)
+  }
+
+  const onInterruptTimer = async () => {
+    notificationId && await Notifications.cancelScheduledNotificationAsync(notificationId)
+    setFocus(false)
   }
 
   return (
@@ -81,7 +74,12 @@ export default function App() {
       <Text style={{ color: 'white' }}>Pomodoro do madim</Text>
       <View style={{ alignItems: 'center', justifyContent: 'center' }}>
       </View>
-      <Timer onStart={onStartTimer} minutes={time} onFinish={onFinishTimer} interruptible />
+      <Timer
+        minutes={minutesTime}
+        onStart={onStartTimer}
+        onFinish={onFinishTimer}
+        onInterrupt={onInterruptTimer}
+      />
       <Button
         title='Mostrar registro'
         onPress={showRegisteredNotifications}
