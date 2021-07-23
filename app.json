@@ -1,0 +1,17 @@
+{
+ "expo": {
+  "name": "Pomodoro",
+  "icon": "./assets/icon.png",
+  "version": "1.0.0",
+  "slug": "pomodoro-mxdsxn",
+  "splash": {
+   "image": "./assets/splash.png",
+   "resizeMode": "contain",
+   "backgroundColor": "#C4C4C4"
+  },
+  "android": {
+   "package": "com.mxdsxn.pomodoro",
+   "versionCode": 1
+  }
+ }
+}
