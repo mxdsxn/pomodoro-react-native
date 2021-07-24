@@ -1,11 +1,14 @@
 import * as Notifications from 'expo-notifications'
 import React, { useState, useEffect } from 'react'
-import { Text, View, Button, NativeEventSubscription } from 'react-native'
+import { Text, View, Button, NativeEventSubscription, AsyncStorage } from 'react-native'
 
-import Timer, { MINUTE_REF } from './src/components/timer'
+import Timer from './src/components/timer'
 import usePushNotification from './src/utils/notifications/usePushNotification'
 import sendNotification from './src/utils/notifications/sendNotification'
 import { focusFinalMessageNotification } from './src/utils/notifications/defaultNotifications'
+import { minutesToSeconds } from 'date-fns'
+
+const NOTIFICATION_ID_KEY = '@notification_id'
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -16,7 +19,7 @@ Notifications.setNotificationHandler({
 })
 
 export default function App() {
-  const minutesTime = 25
+  const scheduledTimeInSeconds = minutesToSeconds(25)
   const [__, setFocus] = useState<boolean>(false)
   const [_, setExpoPushToken] = useState<string>('')
   const [notificationId, setNotificationId] = useState<string>(null)
@@ -25,17 +28,22 @@ export default function App() {
   let responseReceivedNotificationListener: NativeEventSubscription = null
 
   useEffect(() => {
+    showRegisteredNotifications()
+    AsyncStorage.getItem(NOTIFICATION_ID_KEY).then((oldNotificationId) => {
+      if (!!oldNotificationId)
+        setNotificationId(oldNotificationId)
+    })
+
     usePushNotification().then(token => setExpoPushToken(token))
 
     // registra listener para recebimento de notificacao
-    receivedNotificationListener = Notifications.addNotificationReceivedListener(notification => {
-      // callback de notificacao 
+    receivedNotificationListener = Notifications.addNotificationReceivedListener(async () => { /* callback de notificacao */
+      await AsyncStorage.removeItem(NOTIFICATION_ID_KEY)
+      setNotificationId(null)
     })
 
     // registra listener para click em notificacao
-    responseReceivedNotificationListener = Notifications.addNotificationResponseReceivedListener(response => {
-      // callback de notificacao clicada
-    })
+    responseReceivedNotificationListener = Notifications.addNotificationResponseReceivedListener(() => { /* callback de notificacao clicada*/ })
 
     // callback do *useEffect* para quando o componente for desmontado
     // removendo listeners de notificacoes
@@ -46,7 +54,8 @@ export default function App() {
   }, [])
 
   const showRegisteredNotifications = async () => {
-    console.log((await Notifications.getAllScheduledNotificationsAsync()))
+    const allNotification = await Notifications.getAllScheduledNotificationsAsync() || []
+    console.log(allNotification, { length: allNotification.length })
   }
 
   const onFinishTimer = () => {
@@ -54,7 +63,10 @@ export default function App() {
   }
 
   const onStartTimer = async () => {
-    setNotificationId(await sendNotification(focusFinalMessageNotification({ seconds: MINUTE_REF * minutesTime / 1000 })))
+    const notificationId = await sendNotification(focusFinalMessageNotification({ seconds: scheduledTimeInSeconds }))
+    await AsyncStorage.setItem(NOTIFICATION_ID_KEY, notificationId)
+    setNotificationId(notificationId)
+
     setFocus(true)
   }
 
@@ -75,15 +87,16 @@ export default function App() {
       <View style={{ alignItems: 'center', justifyContent: 'center' }}>
       </View>
       <Timer
-        minutes={minutesTime}
+        seconds={scheduledTimeInSeconds}
         onStart={onStartTimer}
         onFinish={onFinishTimer}
         onInterrupt={onInterruptTimer}
       />
-      <Button
-        title='Mostrar registro'
-        onPress={showRegisteredNotifications}
-      />
+      {process.env.NODE_ENV === 'development' &&
+        <Button
+          title='Mostrar registro de notifição'
+          onPress={showRegisteredNotifications}
+        />}
     </View>
   )
 }

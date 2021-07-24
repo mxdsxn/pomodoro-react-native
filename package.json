@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "date-fns": "^2.23.0",
     "expo": "~42.0.0",
     "expo-constants": "~11.0.1",
     "expo-notifications": "~0.12.3",
