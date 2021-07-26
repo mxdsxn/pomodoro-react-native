@@ -43,9 +43,9 @@ export const refrashRecordScheduledTime = async () => {
 
   const newEndTime = addSeconds(new Date(), differenceFromPauseToEndTime)
 
-  await AsyncStorage.setItem(END_TIME_KEY, newEndTime.toISOString())
-  await AsyncStorage.removeItem(PAUSED_TIME_KEY)
   await AsyncStorage.removeItem(END_TIME_KEY)
+  await AsyncStorage.removeItem(PAUSED_TIME_KEY)
+  await AsyncStorage.setItem(END_TIME_KEY, newEndTime.toISOString())
  } catch (err) {
   console.warn(err)
  }

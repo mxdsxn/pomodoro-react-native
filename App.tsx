@@ -31,7 +31,6 @@ export default function App() {
   let responseReceivedNotificationListener: NativeEventSubscription = null
 
   useEffect(() => {
-    showRegisteredNotifications()
     AsyncStorage.getItem(NOTIFICATION_ID_KEY).then((oldNotificationId) => {
       if (!!oldNotificationId)
         setNotificationId(oldNotificationId)
@@ -99,7 +98,6 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'space-around',
     backgroundColor: '#cc130cdd',
-    // backgroundColor: '#cc130c', // active collor
   },
   appTitle: {
     color: 'white',

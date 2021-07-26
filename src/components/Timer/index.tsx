@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Text, View, AsyncStorage, AppState, AppStateStatus } from 'react-native'
+import { View, AsyncStorage, AppState, AppStateStatus } from 'react-native'
 import { differenceInSeconds } from 'date-fns'
 
-import { styles, styleCicleButton } from './Timer.style'
-import CustomButton from '../CustomButton'
+import { styles } from './Timer.style'
+import ActionButton, { ActionButtonTypeProps } from '../ActionButton'
 import TimerDisplay from '../TimerDisplay'
 import {
   recordScheduledTime,
@@ -49,8 +49,8 @@ const Timer: React.FC<TimerProps> = ({ seconds = 0, minutes = 0, hours = 0, days
 
   const onPauseTimer = async () => {
     if (pausable) {
-      await recordPauseTime()
       clearTimeout(lastTimeout)
+      await recordPauseTime()
       setStatus(TIMER_STATUS.PAUSED)
       !!onPause && onPause()
     }
@@ -68,8 +68,8 @@ const Timer: React.FC<TimerProps> = ({ seconds = 0, minutes = 0, hours = 0, days
   }
 
   const onInterruptTimer = async () => {
-    await cleanScheduledTime()
     clearTimeout(lastTimeout)
+    await cleanScheduledTime()
     setStatus(TIMER_STATUS.FINISHED)
     !!onInterrupt && onInterrupt()
   }
@@ -95,11 +95,19 @@ const Timer: React.FC<TimerProps> = ({ seconds = 0, minutes = 0, hours = 0, days
     appState.current = nextAppState
   }
 
+  const onFineshedAndRestart = async () => {
+    await cleanScheduledTime()
+    setTimeLeft(scheduledTime)
+    setStatus(TIMER_STATUS.NOT_STARTED)
+    !!onFinish && onFinish()
+  }
+
   useEffect(() => {
     AppState.addEventListener('change', handleAppStateChange)
 
     lastTimeout = setTimeout(() => {
-      if (timerStatus === TIMER_STATUS.STARTED && timeLeft > 0) {
+      const isActive = timerStatus === TIMER_STATUS.STARTED || timerStatus === TIMER_STATUS.TRYING_TO_INTERRUPT
+      if (isActive && timeLeft > 0) {
         setTimeLeft(timeLeft - 1)
       }
     }, 1000)
@@ -125,43 +133,35 @@ const Timer: React.FC<TimerProps> = ({ seconds = 0, minutes = 0, hours = 0, days
   }, [])
 
   const ButtonComponent = () => {
-    let styleButton
-    let titleButton
-    let onPressButton
+    let onPressActionButton = undefined
+    let type: ActionButtonTypeProps
 
     if (timerStatus === TIMER_STATUS.NOT_STARTED) {
-      styleButton = styleCicleButton
-      titleButton = '▶'
-      onPressButton = onStartTimer
-    }
-    if (timerStatus === TIMER_STATUS.STARTED && pausable) {
-      styleButton = styleCicleButton
-      titleButton = '▐ ▌'
-      onPressButton = onPauseTimer
-    }
-    if (timerStatus === TIMER_STATUS.STARTED) {
-      styleButton = styleCicleButton
-      titleButton = '■'
-      onPressButton = pausable ? onInterruptTimer : onTryInterruptTimer
-    }
-    if (timerStatus === TIMER_STATUS.FINISHED) {
-      styleButton = styleCicleButton
-      titleButton = '↻'
-      onPressButton = onRestartTimer
+      onPressActionButton = onStartTimer
+      type = 'play'
+    } else if (timerStatus === TIMER_STATUS.STARTED && pausable) {
+      onPressActionButton = onPauseTimer
+      type = 'pause'
+    } else if (timerStatus === TIMER_STATUS.STARTED) {
+      onPressActionButton = pausable ? onInterruptTimer : onTryInterruptTimer
+      type = 'stop'
+    } else if (timerStatus === TIMER_STATUS.FINISHED) {
+      onPressActionButton = onRestartTimer
+      type = 'restart'
+    } else if (timerStatus === TIMER_STATUS.PAUSED) {
+      onPressActionButton = onContinueTimer
+      type = 'continue'
     }
 
-    if (timerStatus === TIMER_STATUS.PAUSED) {
-      styleButton = styleCicleButton
-      titleButton = 'C'
-      onPressButton = onContinueTimer
-    }
+    const available = !!type && !!onPressActionButton
 
-    return <CustomButton style={styleButton} title={titleButton} onPress={onPressButton} />
-  }
-
-  const InterruptModal = () => {
-    return timerStatus === TIMER_STATUS.TRYING_TO_INTERRUPT
-      ? <TimerInterruptModal onDecline={onInterruptTimer} onAccept={() => setStatus(TIMER_STATUS.STARTED)} />
+    return available
+      ? (
+        <View style={{ marginTop: 100, display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly' }}>
+          <ActionButton onPress={onPressActionButton} type={type} />
+          {timerStatus === TIMER_STATUS.PAUSED && <ActionButton onPress={onFineshedAndRestart} type="restart" />}
+        </View>
+      )
       : <></>
   }
 
@@ -169,7 +169,11 @@ const Timer: React.FC<TimerProps> = ({ seconds = 0, minutes = 0, hours = 0, days
     <View style={styles.container}>
       <TimerDisplay timeLeft={timeLeft} />
       <ButtonComponent />
-      <InterruptModal />
+      <TimerInterruptModal
+        onAccept={() => setStatus(TIMER_STATUS.STARTED)}
+        onDecline={onInterruptTimer}
+        isActive={timerStatus === TIMER_STATUS.TRYING_TO_INTERRUPT}
+      />
     </View>
   )
 }

@@ -1,12 +1,16 @@
-import React from 'react'
-import { Text, Pressable } from 'react-native'
+import React, { ReactNode } from 'react'
+import { Pressable, StyleProp, ViewStyle } from 'react-native'
 
-type CustomButtonProps = { title?: string, onPress: () => void, color?: string, style: { container: any, text: any } }
+type CustomButtonProps = {
+ onPress: () => void,
+ style: StyleProp<ViewStyle>
+ children: ReactNode
+}
 
-const CustomButton: React.FC<CustomButtonProps> = ({ title, onPress, style }: CustomButtonProps) => {
+const CustomButton: React.FC<CustomButtonProps> = ({ children, onPress, style }: CustomButtonProps) => {
  return (
-  <Pressable style={style.container} onPress={onPress}>
-   {title && <Text style={style.text}>{title}</Text>}
+  <Pressable style={style} onPress={onPress}>
+   {children}
   </Pressable>
  )
 }

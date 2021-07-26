@@ -1,48 +1,32 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import CustomButton from '../CustomButton'
 
+import { styles } from './TimerInterruptModal.style'
 
 type InterruptModalProps = {
- onDecline: () => void
- onAccept: () => void
+  onDecline: () => void
+  onAccept: () => void
+  isActive: boolean
 }
-const TimerInterruptModal: React.FC<InterruptModalProps> = ({ onDecline, onAccept }: InterruptModalProps) => {
- return (
-  <View>
-   <Text>Deseja interromper</Text>
-   <CustomButton style={styleCenterButton} title='Sim' onPress={onDecline} />
-   <CustomButton style={styleCenterButton} title='Não' onPress={onAccept} />
-  </View>
- )
+const TimerInterruptModal: React.FC<InterruptModalProps> = ({ onDecline, onAccept, isActive = false }: InterruptModalProps) => {
+  const iconSize = 35
+  return isActive
+    ? (
+      <View style={styles.container}>
+        <Text style={styles.questionText}>Deseja interromper</Text>
+        <View style={styles.buttonsWrapper}>
+          <CustomButton style={styles.buttonContainer} onPress={onDecline} >
+            <Ionicons name="md-checkmark-sharp" size={iconSize} color="white" />
+          </CustomButton>
+          <CustomButton style={{ ...styles.buttonContainer, backgroundColor: 'white' }} onPress={onAccept} >
+            <Ionicons name="md-close-sharp" size={iconSize} color="#bd3838" />
+          </CustomButton>
+        </View>
+      </View>
+    )
+    : <></>
 }
 
 export default TimerInterruptModal
-
-const styleCicleButton = StyleSheet.create({
- container: {
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingVertical: 23,
-  borderRadius: 100,
-  elevation: 3,
-  backgroundColor: '#be4541',
-  width: 82,
- },
- text: {
-  fontSize: 24,
-  fontWeight: 'bold',
-  letterSpacing: 0.25,
-  color: 'white',
- }
-})
-
-const styleCenterButton = StyleSheet.create({
- container: {
-  ...styleCicleButton.container,
-  alignSelf: 'center',
- },
- text: {
-  ...styleCicleButton.text
- }
-})
